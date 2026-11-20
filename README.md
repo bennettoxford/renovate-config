@@ -2,14 +2,14 @@
 
 This repository provides three shareable Renovate presets:
 
-- `default.json`: shared update policy
-- `disable-uv-lockfilemaintenance.json`: optional override that disables PEP 621 lockfile maintenance.
+- `default.json5`: shared update policy
+- `disable-uv-lockfilemaintenance.json5`: optional override that disables PEP 621 lockfile maintenance.
 
 ## Use the global preset
 
 ```json
 {
-  "extends": ["github>bennettoxford/renovate-config"]
+  "extends": ["github>bennettoxford/renovate-config:default.json5"]
 }
 ```
 
@@ -20,8 +20,8 @@ Extend both presets:
 ```json
 {
   "extends": [
-    "github>bennettoxford/renovate-config",
-    "github>bennettoxford/renovate-config:disable-uv-lockfilemaintenance.json"
+    "github>bennettoxford/renovate-config:default.json5",
+    "github>bennettoxford/renovate-config:disable-uv-lockfilemaintenance.json5"
   ]
 }
 ```
@@ -37,7 +37,7 @@ The global config extends the [Renovate recommended config](https://docs.renovat
 - [Pins GitHub Actions to semver digests](https://docs.renovatebot.com/presets-helpers/#helperspingithubactiondigests)
 - [Pins Docker images to digests](https://docs.renovatebot.com/presets-docker/#dockerpindigests)
 - [Reports on abandoned packages](https://docs.renovatebot.com/presets-abandonments/)
-- [Uses a 3 day cooldown for npm security updates](https://docs.renovatebot.com/presets-security/
+- [Uses a 3 day cooldown for npm security updates](https://docs.renovatebot.com/presets-security/)
 - [Adds badges to PRs](https://docs.renovatebot.com/presets-mergeConfidence/#mergeconfidenceall-badges)
 - [Groups all updates in a single group](https://docs.renovatebot.com/presets-group/)
 - Disables PR and branch limits
