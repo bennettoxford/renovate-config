@@ -123,3 +123,7 @@ a branch called `my-branch`, change the repo's `extends` to:
 
 The branch changes can then be checked using a local run in the downstram repo,
 e.g. using [a `just renovate-dry-run` recipe](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/justfile#L248).
+
+### Setting up Renovate on a new repo
+
+See the [additional notes](SETTING_UP_RENOVATE_ON_A_NEW_REPO.md).
