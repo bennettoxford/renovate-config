@@ -173,7 +173,7 @@
       "minimumReleaseAge": null
     }
   ],
-  // Include vulnerability alerts; this uses dependabot and requires that depenency graph and
+  // Include vulnerability alerts; this uses dependabot and requires that dependency graph and
   // dependabot alerts are enabled in the repo
   // https://docs.renovatebot.com/configuration-options/#vulnerabilityalerts
   "vulnerabilityAlerts": {
