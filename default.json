@@ -1,0 +1,93 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Shared Renovate defaults for Bennett repositories",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    "abandonments:recommended",
+    "security:minimumReleaseAgeNpm",
+    "docker:pinDigests",
+    "mergeConfidence:all-badges",
+    "group:all"
+  ],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "branchConcurrentLimit": 0,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update versions in justfiles marked with a Renovate comment",
+      "managerFilePatterns": ["/(^|/)\\.?[Jj]ustfile(\\.base)?$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?\\s*\\n\\s*[A-Za-z0-9_-]+\\s*:=\\s*[\"'](?<currentValue>[^\"'@]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?[\"']"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}"
+    }
+  ],
+  "labels": ["dependencies"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "minimumReleaseAge": "7 days",
+    "minimumReleaseAgeBehaviour": "timestamp-optional",
+    "schedule": ["* 0-3 * * WED"],
+    "prBodyNotes": [":information_source: Before reviewing this PR, merge any prod/dev dependency PRs and rebase."]
+  },
+  "schedule": ["* 0-3 * * WED"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["*"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchManagers": ["pyenv", "nodenv"],
+      "enabled": false
+    },
+    {
+      "matchDepTypes": ["requires-python"],
+      "enabled": false
+    },
+    {
+      "matchDatasources": ["github-runners"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["**/justfile", "**/Justfile", "**/.justfile", "**/justfile.base"],
+      "minimumReleaseAgeBehaviour": "timestamp-optional",
+      "pinDigests": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "addLabels": ["js"],
+      "rangeStrategy": "in-range-only"
+    },
+    {
+      "matchManagers": ["pep621"],
+      "addLabels": ["python"],
+      "rangeStrategy": "widen"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "addLabels": ["actions"],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "addLabels": ["docker"],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
+      "description": "Disable minimumReleaseAge for pinDigest update types",
+      "matchUpdateTypes": ["pinDigest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["opensafely-core/setup-action"],
+      "minimumReleaseAge": null
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "addLabels": ["security"]
+  }
+}

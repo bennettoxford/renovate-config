@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Disable Renovate lockfile maintenance for PEP 621 / uv projects",
+  "pep621": {
+    "lockFileMaintenance": {
+      "enabled": false
+    }
+  }
+}
