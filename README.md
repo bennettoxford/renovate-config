@@ -99,3 +99,27 @@ Use the version in your just recipes, e.g.
 lint-actions:
     docker run ... kjanat/actionlint:{{ actionlint_version }}
 ```
+
+## Testing updates to this config
+
+### Check that the config is valid:
+
+```
+just check-renovate-config default.json5
+just check-renovate-config disable-uv-lockfile-maintenance.json5
+```
+
+### Use a branch in a repo
+
+To check how changes to these presets will affect a repo that uses them, push
+changes to a branch, and use it in the downstrem repo, e.g. if your changes are on
+a branch called `my-branch`, change the repo's `extends` to:
+
+```
+{
+  "extends": ["github>bennettoxford/renovate-config:default.json5#my-branch"]
+}
+```
+
+The branch changes can then be checked using a local run in the downstram repo,
+e.g. using [a `just renovate-dry-run` recipe](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/justfile#L248).
