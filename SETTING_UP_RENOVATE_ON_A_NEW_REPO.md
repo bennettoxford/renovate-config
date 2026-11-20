@@ -28,6 +28,10 @@ dependency needs to be pinned to a specific version, it can be set with an equal
 upper bound. Renovate will not change the `package.json` ranges, and will only update
 the locked versions if they meet the constraints set in `package.json`
 
+### Docker image versions
+
+Renovate will pin any docker image versions set in a Dockerfile to digests and keep them updated. Check if your repo uses a docker/.env file that sets image versions as an environment variables that are intended to override the default in the Dockerfile. If it does, remove them. Image versions should always be set in the Dockerfile itself.
+
 ### UV mirror
 
 If required, add a `just uvmirror` recipe ([example.](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/justfile#L64))
