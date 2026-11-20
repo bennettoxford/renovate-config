@@ -20,8 +20,8 @@ Extend both presets:
 ```json
 {
   "extends": [
-    "github>OWNER/renovate-config",
-    "github>OWNER/renovate-config:disable-uv-lockfilemaintenance.json"
+    "github>bennettoxford/renovate-config",
+    "github>bennettoxford/renovate-config:disable-uv-lockfilemaintenance.json"
   ]
 }
 ```
