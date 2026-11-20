@@ -14,8 +14,9 @@
     // 3 day cooldown for npm security updated
     // https://docs.renovatebot.com/presets-security/#securityminimumreleaseagenpm
     "security:minimumReleaseAgeNpm",
-    // We don't want automated docker/docker-compose/Dockerfile updates
-    "docker:disable",
+    // ensure all docker images are pinned to digests
+    // "docker:https://docs.renovatebot.com/presets-docker/#dockerpindigests"
+    "docker:pinDigests",
     // Add the nice badges to PRs
     // https://docs.renovatebot.com/presets-mergeConfidence/#mergeconfidenceall-badges
     "mergeConfidence:all-badges",
