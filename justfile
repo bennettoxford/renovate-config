@@ -13,8 +13,7 @@ lint-actions:
 # Run the various dev checks but does not change any files
 check:
     just lint-actions
-    just check-renovate-config default.json5
-    just check-renovate-config disable-uv-lockfilemaintenance.json5
+    for file in *.json5; do just check-renovate-config "$file" || exit; done
 
 # Fix any automatically fixable linting or formatting errors
 fix:

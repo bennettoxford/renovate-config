@@ -92,17 +92,11 @@
   "schedule": ["* 0-3 * * WED"],
   // Note package rules apply only to direct dependencies
   // rangeStrategy:
-  //   - defined as "in-range-only" for js dependencies; this updates the version in
+  //   - defined as "in-range-only" for js and python dependencies; this updates the version in
   //     lockfiles while respecting the ranges specified in a package file (package.json etc)
   //     Assumes that the repo has lower limits (>=) set on dependencies that we want to
   //     increase (with respect to minimumReleaseAge) whenever there is a new version.
   //     Upper limits can be pinned in the package file and renovate will not bump them.
-  //   - defined as "widen" for python dependencies; ideally we would also use "in-range-only"
-  //     but currently this strategy doesn't work with minimumReleaseAge for uv, and will
-  //     try (and fail) to increase to a pending version beyond the minimumReleaseAge.
-  //     This should be fixed by either of these open PRs:
-  //     https://github.com/renovatebot/renovate/pull/43681
-  //     https://github.com/renovatebot/renovate/pull/45370
   // Note we can't set a rangeStrategy globally, as other package managers e.g. github actions won't
   // be able to resolve dependencies with it.
   "packageRules": [
@@ -155,7 +149,7 @@
     {
       "matchManagers": ["pep621"],
       "addLabels": ["python"],
-      "rangeStrategy": "widen"
+      "rangeStrategy": "in-range-only"
     },
     {
       "matchManagers": ["github-actions"],
