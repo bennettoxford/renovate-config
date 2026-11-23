@@ -56,7 +56,7 @@ The global config extends the [Renovate recommended config](https://docs.renovat
     - node versions
     - github-runners
 - Adds specific labels for js, python, actions, docker and security updates
-- Sets the range strategy for js and python to `in-range-only`
+- Sets the range strategy for js and python to `in-range-only` (overridden, see section below)
 - Sets minimumReleaseAgeBehaviour to `timestamp-optional` for GHA and docker, as not all datasources provide timestamps; without this, updates get stuck in the Pending state forever.
 - Disables the cooldown for our own setup-action GHA
 
