@@ -1,9 +1,12 @@
 # Shared Renovate presets
 
-This repository provides three shareable Renovate presets:
+This repository provides two shareable Renovate presets:
 
 - `default.json5`: shared update policy
-- `disable-uv-lockfilemaintenance.json5`: optional override that disables PEP 621 lockfile maintenance.
+- `uv-minimumreleaseage-workaround.json5`: optional workarounds for limitations of uv cooldowns
+    - disables PEP 621 lockfile maintenance.
+    - uses the "widen" range stragegy for PEP 621.
+
 
 ## Use the global preset
 
@@ -13,7 +16,7 @@ This repository provides three shareable Renovate presets:
 }
 ```
 
-## Opt in to the disable-uv-lockfile-maintenance preset
+## Opt in to the uv workarounds for minimum release age limitations
 
 Extend both presets:
 
@@ -21,7 +24,7 @@ Extend both presets:
 {
   "extends": [
     "github>bennettoxford/renovate-config:default.json5",
-    "github>bennettoxford/renovate-config:disable-uv-lockfilemaintenance.json5"
+    "github>bennettoxford/renovate-config:uv-minimumreleaseage-workaround.json5"
   ]
 }
 ```
@@ -53,7 +56,7 @@ The global config extends the [Renovate recommended config](https://docs.renovat
     - node versions
     - github-runners
 - Adds specific labels for js, python, actions, docker and security updates
-- Sets the range strategy for js to `in-range-only` and for python to `widen`
+- Sets the range strategy for js and python to `in-range-only` (overridden, see section below)
 - Sets minimumReleaseAgeBehaviour to `timestamp-optional` for GHA and docker, as not all datasources provide timestamps; without this, updates get stuck in the Pending state forever.
 - Disables the cooldown for our own setup-action GHA
 
@@ -63,7 +66,9 @@ Currently Renovate doesn't fully respect the minimumReleaseAge with uv. This app
 - lockfileMaintenance
 - bump / in-range-only range strategies
 
-As a result, we disable lockfile maintenance for uv, and use our update-dependencies-action instead, and we use the `widen` strategy for regular updates. This means that repos using uv need to use upper-bound ranges in their `pyproject.toml` (`ruff<=0.17` etc). If you need to pin a specific dependency, you will need to add a rule in the repo's local config, e.g.
+As a result, we disable lockfile maintenance for uv, and use our update-dependencies-action instead, and we use the `widen` strategy for regular updates, via the `uv-minimumreleaseage-workaround.json5` preset. 
+
+This means that repos using uv need to use upper-bound ranges in their `pyproject.toml` (`ruff<=0.17` etc). If you need to pin a specific dependency, you will need to add a rule in the repo's local config, e.g.
 
 ```json
 "packageRules": [
@@ -105,9 +110,10 @@ lint-actions:
 ### Check that the config is valid:
 
 ```
-just check-renovate-config default.json5
-just check-renovate-config disable-uv-lockfile-maintenance.json5
+just check-renovate-config <config-file>.json5
 ```
+
+`just check` will check all `.json5` files.
 
 ### Use a branch in a repo
 

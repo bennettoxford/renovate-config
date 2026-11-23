@@ -6,19 +6,6 @@
 
 Remove any `dependabot.yml` file.
 
-### Python dependencies
-
-Note: currently Renovate doesn't fully respect the minimumReleaseAge with uv. This applies to:
-- lockfileMaintenance
-- bump / in-range-only range strategies
-
-This means that, for now, we need to use the `widen` strategy for uv, and allow Renovate to expand the ranges in the `pyproject.toml`
-
-Update all dependencies in the `pyproject.toml` to set ranges with upper limits
-(Set to foo<=[current locked version]). Renovate needs this in order to apply version updates. Without any pins or ranges, it will consider the current locked version to satisfy the version constraints.
-
-Remove any `exclude-newer` setting in `pyproject.toml`.
-
 ### JS dependencies
 
 We use the `in-range-only` strategy for JS dependencies.
@@ -27,6 +14,16 @@ Ensure all dependencies in `package.json` are set to ranges with lower bounds. I
 dependency needs to be pinned to a specific version, it can be set with an equality or
 upper bound. Renovate will not change the `package.json` ranges, and will only update
 the locked versions if they meet the constraints set in `package.json`
+
+### Python dependencies
+
+Ideally we would also use the `in-range-only` strategy for python
+dependencies. However, this currently doesn't fully respect the minimumReleaseAge with uv, so for now we apply the `uv-minimumreleaseage-workaround.json5` preset, which will use the `widen` range strategy instead.
+
+Update all dependencies in the `pyproject.toml` to set ranges with upper limits
+(Set to foo<=[current locked version]). Renovate needs this in order to apply version updates. Without any pins or ranges, it will consider the current locked version to satisfy the version constraints.
+
+Remove any `exclude-newer` setting in `pyproject.toml`.
 
 ### Docker image versions
 
@@ -81,7 +78,7 @@ To use just the presets from this repo, the `renovate.json5` only needs to conta
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>bennettoxford/renovate-config:default.json5",
-    "github>bennettoxford/renovate-config:disable-uv-lockfilemaintenance.json5",
+    "github>bennettoxford/uv-minimumreleaseage-workaround.json5",
   ]
 }
 ```
@@ -95,7 +92,7 @@ the `renovate.json5` to:
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>bennettoxford/renovate-config:default.json5",
-    "github>bennettoxford/renovate-config:disable-uv-lockfilemaintenance.json5",
+    "github>bennettoxford/renovate-config:uv-minimumreleaseage-workaround.json5",
   ],
   // Run early Monday morning
   "schedule": ["* 0-3 * * MON"],
@@ -119,13 +116,34 @@ If the repo has a justfile, add `just check-renovate-config` and `just renovate-
 If you push an invalid config, the PR will change and tell you that.
 You can look at the logs (linked in the PR) to see what went wrong.
 
-## Workarounds for uv lockfile updaes
+## Workarounds for uv cooldowns
 
-The [default config](default.json5) includes `lockFileMaintenance`. We want lockFileMainentance for updating transitive dependencies (Renovate’s main package managers will only update direct dependencies, by design). However, for `uv`, it doesn’t currently respect the minimumReleaseAge, so most repos will want to also use the
-[disable-uv-lockfilemaintenance](disable-uv-lockfilemaintenance.json5) preset to disable
-it for `uv`.
+The [default config](default.json5) includes `lockFileMaintenance` and sets the `rangeStrategy` for both js and python dependencies to `in-range-only`. 
 
-Instead, we need to reuse the [update-dependences action](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/.github/workflows/update-dependencies.yml) to do the same thing. This also requires an upgrade-all/update-dependencies [just recipe](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/justfile#L72), that runs with a “7 days ago” cooldown. Note that it’s important that `devenv` (or whatever recipe your repo has that runs `uv sync` runs **after** `upgrade-all`; this will remove the excludes-newer timestamps written into the `uv.lock`. (If you leave the timestamps in the uv.lock, the next developer to work on the repo will find that the uv.lock file gets mysteriously updated.)
+Currently these don't work fully with `minimumReleaseAge` for uv.
+
+We therefore use the `uv-minimumreleaseage-workaround.json5` preset to disable lockFileMaintenance for uv and to set the `rangeStrategy` to `widen`.
+
+### lockFileMaintenance
+
+We want lockFileMainentance for updating transitive dependencies (Renovate’s main package managers will only update direct dependencies, by design). So for uv, we need to reuse the [update-dependences action](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/.github/workflows/update-dependencies.yml) to do the same thing. This also requires an upgrade-all/update-dependencies [just recipe](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/justfile#L72), that runs with a “7 days ago” cooldown. Note that it’s important that `devenv` (or whatever recipe your repo has that runs `uv sync` runs **after** `upgrade-all`; this will remove the excludes-newer timestamps written into the `uv.lock`. (If you leave the timestamps in the uv.lock, the next developer to work on the repo will find that the uv.lock file gets mysteriously updated.)
+
+### Widen rangeStrategy
+
+To use the `widen` range strategy, we need to use ranges in the pyproject.toml with
+upper limits, and allow Renovate to expand the ranges in the `pyproject.toml`.
+
+To pin a specific dependency, you need to add a rule in the repo's local config, e.g.
+
+```json
+"packageRules": [
+    {
+      "matchManagers": ["pep621"],
+      "matchDepNames": ["pytest"],
+      "allowedVersions": "<9.2.0"
+    }
+]
+```
 
 ## Enable Renovate
 
