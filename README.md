@@ -66,7 +66,7 @@ Currently Renovate doesn't fully respect the minimumReleaseAge with uv. This app
 - lockfileMaintenance
 - bump / in-range-only range strategies
 
-As a result, we disable lockfile maintenance for uv, and use our update-dependencies-action instead, and we use the `widen` strategy for regular updates, via the `uv-minimumreleaseage-workaround.json5 preset`. 
+As a result, we disable lockfile maintenance for uv, and use our update-dependencies-action instead, and we use the `widen` strategy for regular updates, via the `uv-minimumreleaseage-workaround.json5` preset. 
 
 This means that repos using uv need to use upper-bound ranges in their `pyproject.toml` (`ruff<=0.17` etc). If you need to pin a specific dependency, you will need to add a rule in the repo's local config, e.g.
 
