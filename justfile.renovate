@@ -1,0 +1,4 @@
+import 'justfile.base'
+
+check-renovate-config FILE="renovate.json5": _check-prerequisites
+    {{ docker_run_safe }} -v $(pwd):/repo:ro --workdir /repo renovate/renovate:{{ renovate_version }} renovate-config-validator {{ FILE }}
