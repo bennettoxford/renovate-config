@@ -1,4 +1,9 @@
-import 'justfile.base'
+# Note: expects the following variables to be defined, either in a
+# justfile.base file or in the justfile that imports this one:
+#  - docker_run_safe
+#  - renovate_version
+
+import? 'justfile.base'
 
 # We require just >= 1.46.0 for the long arg syntax
 set minimum-version := '1.46.0'

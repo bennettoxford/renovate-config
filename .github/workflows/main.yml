@@ -18,5 +18,6 @@ jobs:
       - uses: opensafely-core/setup-action@fc0f6e03d1a6fe8c53ff686b310dd08be072b8c8 # v1.9.0
         with:
           install-just: true
+      - run: just --version
       - name: Lint and check renovate config
         run: just check
