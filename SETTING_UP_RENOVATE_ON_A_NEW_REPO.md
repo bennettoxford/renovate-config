@@ -135,13 +135,15 @@ This gives you:
   - `just check-renovate-config`: check your renovate config (pass an optional filename; defaults to `renovate.json5`)
   - `just renovate-dry-run`: runs renovate on your local repo, with the current renovate config and package versions, and shows what version updates renovate would make.
 
-To run a full Renovate dry run against this branch, push the branch first, and run in github mode:
+To run a full Renovate dry run against this branch, push the branch first, and run in github mode. It requires a github token as the RENOVATE_TOKEN environment variable:
 
 ```
-just renovate-dry-run github <your-branch>
+RENOVATE_TOKEN="$(gh auth token) just renovate-dry-run github <your-branch>
 ```
 
 This checks some things that local mode can't, e.g. lockFileMaintenance, which depend on it determinining what branches and PRs it would need to make.
+
+Local mode does not usually require a GitHub token, but occasionally you may hit rate limits; pass a RENOVATE_TOKEN environment variable to avoid them.
 
 Pass the --output flag to show different output formats:
   - `--output summary`: summary table (the default)

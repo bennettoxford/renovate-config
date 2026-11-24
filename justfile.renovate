@@ -129,6 +129,12 @@ renovate-dry-run mode="local" branch="" output="summary":
         exit 1
     fi
 
+    if [[ "{{ mode }}" == "github" && -z "${RENOVATE_TOKEN:-}" ]]; then
+        echo "Error: RENOVATE_TOKEN is required for GitHub mode." >&2
+        echo 'Set it with: RENOVATE_TOKEN="$(gh auth token)" just renovate-dry-run github BRANCH' >&2
+        exit 1
+    fi
+
     log_file=$(mktemp)
     progress_pid=""
 
@@ -162,6 +168,7 @@ renovate-dry-run mode="local" branch="" output="summary":
     # Renovate querying docker, github, pypi etc for updates.
     # Renovate also needs writable working/cache directories, so we give it a tmpfs mount
     if [[ "{{ mode }}" == "local" ]]; then
+        export RENOVATE_GITHUB_COM_TOKEN="${RENOVATE_TOKEN:-}"
         # Other than the writable cache/temp space, we run docker read-only.
         docker run --rm --read-only --tmpfs /tmp \
             --cap-drop ALL \
@@ -172,6 +179,7 @@ renovate-dry-run mode="local" branch="" output="summary":
             --workdir /repo \
             -e LOG_LEVEL=debug \
             -e LOG_FORMAT=json \
+            -e RENOVATE_GITHUB_COM_TOKEN \
             renovate/renovate:{{ renovate_version }} \
             --platform=local > "$log_file" || status=$?
     else
@@ -183,7 +191,7 @@ renovate-dry-run mode="local" branch="" output="summary":
             --security-opt no-new-privileges:true \
             -e LOG_LEVEL=debug \
             -e LOG_FORMAT=json \
-            -e RENOVATE_TOKEN="$(gh auth token)" \
+            -e RENOVATE_TOKEN \
             renovate/renovate:{{ renovate_version }} \
             --platform=github \
             --dry-run=full \
