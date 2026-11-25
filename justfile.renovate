@@ -186,6 +186,16 @@ renovate-dry-run mode="local" branch="" output="summary":
         # We can't run as --read-only because it needs to install uv and npm;
         # however, it doesn't need to mount in any local files because it's pulling
         # a remote branch.
+
+        # Find the current org/repo from the remote origin
+        repo=$(git remote get-url origin |
+        sed -E 's#(git@|https://)github\.com[:/]##; s#\.git$##')
+
+        if [[ ! "$repo" =~ ^[^/]+/[^/]+$ ]]; then
+            echo "Error: couldn't parse owner/repo from git remote origin." >&2
+            exit 1
+        fi
+
         docker run --rm --tmpfs /tmp \
             --cap-drop ALL \
             --security-opt no-new-privileges:true \
@@ -197,7 +207,7 @@ renovate-dry-run mode="local" branch="" output="summary":
             --dry-run=full \
             --base-branch-patterns="{{ branch }}" \
             --use-base-branch-config=merge \
-            opensafely-core/job-runner > "$log_file" || status=$?
+            "$repo" > "$log_file" || status=$?
     fi
 
     kill "$progress_pid" 2>/dev/null || true
