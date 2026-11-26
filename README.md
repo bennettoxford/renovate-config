@@ -58,6 +58,7 @@ The global config extends the [Renovate recommended config](https://docs.renovat
 - Adds specific labels for js, python, actions, docker and security updates
 - Sets the range strategy for js and python to `in-range-only` (overridden, see section below)
 - Sets minimumReleaseAgeBehaviour to `timestamp-optional` for GHA and docker, as not all datasources provide timestamps; without this, updates get stuck in the Pending state forever.
+- Sets exact versioning for updates in Dockerfiles: this means that tags will remained fixed while allowing digest updates (e.g. an image tagged `ubuntu:24.04@sha256...` will be updated with new digests, but will *not* be updated to `ubuntu:26.04@sha256...`).
 - Disables the cooldown for our own setup-action GHA
 
 ## JS/Python range strategies
