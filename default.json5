@@ -165,6 +165,12 @@
       // Docker Hub provides timestamps; ghcr and others don't.
       "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
+    {
+      "description": "Keep Dockerfile tags fixed while allowing digest updates",
+      "matchManagers": ["dockerfile"],
+      "matchDatasources": ["docker"],
+      "versioning": "exact",
+    },
     // disable minimumReleaseAge for pinDigest to avoid the stability-days check showing as pending
     // when Renovate opens a PR for pinning GHA dependencies to digests
     {
