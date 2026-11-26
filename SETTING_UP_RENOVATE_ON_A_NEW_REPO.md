@@ -109,9 +109,46 @@ the `renovate.json5` to:
 
 Also see [Renovate configuration docs](https://docs.renovatebot.com/configuration-options/).
 
-If the repo has a justfile, add `just check-renovate-config` and `just renovate-dry-run` just recipes. See job-runner's [justfile](https://github.com/opensafely-core/job-runner/blob/3d409e7c8849ea1a7f80594518e230142783ed58/justfile#L240) for examples.
 
-`just renovate-dry-run` runs renovate on your local repo, with the current renovate config and package versions, and shows what version updates renovate would make.
+### just recipes
+
+If the repo has a justfile, fetch the renovate just recipes from this repo by
+addding:
+
+```
+import? 'justfile.renovate'
+
+fetch-renovate-recipes:
+    curl -fsSL https://raw.githubusercontent.com/bennettoxford/renovate-config/main/justfile.renovate -o justfile.renovate
+
+```
+
+Note that your repo must define just variables `docker_run_safe` and `renovate_version`; typically these
+will be in a `justfile.base` file.
+
+Call `just fetch-renovate-recipes` once (usually as part of `just devenv`) to make these
+recipes available.
+
+Add `justfile.renovate` to the repo's `.gitignore`.
+
+This gives you:
+  - `just check-renovate-config`: check your renovate config (pass an optional filename; defaults to `renovate.json5`)
+  - `just renovate-dry-run`: runs renovate on your local repo, with the current renovate config and package versions, and shows what version updates renovate would make.
+
+To run a full Renovate dry run against this branch, push the branch first, and run in github mode. It requires a github token as the RENOVATE_TOKEN environment variable:
+
+```
+RENOVATE_TOKEN="$(gh auth token) just renovate-dry-run github <your-branch>
+```
+
+This checks some things that local mode can't, e.g. lockFileMaintenance, which depend on it determinining what branches and PRs it would need to make.
+
+Local mode does not usually require a GitHub token, but occasionally you may hit rate limits; pass a RENOVATE_TOKEN environment variable to avoid them.
+
+Pass the --output flag to show different output formats:
+  - `--output summary`: summary table (the default)
+  - `--output packages`: structured JSON of proposed package updates
+  - `--output full`: full log
 
 If you push an invalid config, the PR will change and tell you that.
 You can look at the logs (linked in the PR) to see what went wrong.

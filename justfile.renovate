@@ -1,0 +1,216 @@
+# Note: expects the following variables to be defined, either in a
+# justfile.base file or in the justfile that imports this one:
+#  - docker_run_safe
+#  - renovate_version
+
+import? 'justfile.base'
+
+# We require just >= 1.46.0 for the long arg syntax
+set minimum-version := '1.46.0'
+
+check-renovate-config FILE="renovate.json5":
+    {{ docker_run_safe }} -v "$(pwd):/repo:ro" --workdir /repo renovate/renovate:{{ renovate_version }} renovate-config-validator {{ FILE }}
+
+# Show what updates Renovate would propose.
+# mode: local or github; local runs only against local files, and is useful for
+# checking package updates that Renovate will make, but github mode checks some things
+# local mode can't, e.g. lockFileMaintenance, which depend on it determinining what
+# branches and PRs it would need to make. Note that the branch needs to be pushed first.
+# branch: in github mode, the branch to check against
+# --output: 
+#    summary: summary table
+#    packages: structured JSON of proposed package updates
+#    full: full log
+
+[arg("output", long)]
+renovate-dry-run mode="local" branch="" output="summary":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    format_renovate_log() {
+        local log_file="$1"
+        local output="$2"
+
+        case "$output" in
+            summary)
+                jq -rRn '
+                    # Truncate digests to the first 12 characters.
+                    def format_digest:
+                        if . then
+                            "@" + .[:12] + "..."
+                        else
+                            ""
+                        end;
+
+                    [
+                        "PACKAGE",
+                        "CURRENT VERSION",
+                        "CURRENT VALUE",
+                        "NEW VERSION",
+                        "NEW VALUE",
+                        "AGE",
+                        "STATUS"
+                    ],
+                    (
+                        inputs
+                        | fromjson?
+                        | objects
+                        | select(.msg == "packageFiles with updates")
+                        | .config[][]
+                        | .deps[]
+                        | . as $dep
+                        | $dep.depName as $name
+                        | ($dep.lockedVersion // $dep.currentVersion // "-") as $currentVersion
+                        | ($dep.currentValue // "-") as $currentValue
+                        | ($dep.updates // [])[]
+                        | [
+                            $name,
+                            ($currentVersion + ($dep.currentDigest | format_digest)),
+                            $currentValue,
+                            (
+                                (.newVersion // .newValue // "-")
+                                + (.newDigest | format_digest)
+                            ),
+                            (.newValue // "-"),
+                            # there can be digest-only updates, i.e. where the version tag is the same but a digest has
+                            # changed, e.g. a new digest for the ubuntu:24.04 docker image. These have no new version age,
+                            # so show the current version age (the age of the tag)
+                            (
+                                if .newVersionAgeInDays != null then
+                                    "\(.newVersionAgeInDays)d"
+                                elif $dep.currentVersionAgeInDays != null then
+                                    "\($dep.currentVersionAgeInDays)d"
+                                else
+                                    "-"
+                                end
+                            ),
+                            (if .pendingChecks then "pending" else "ready" end)
+                        ]
+                    )
+                    | @tsv
+                ' "$log_file" | column -t -s $'\t'
+                ;;
+
+            packages)
+                jq -R '
+                    fromjson?
+                    | objects
+                    | select(.msg == "packageFiles with updates")
+                    | .config
+                ' "$log_file"
+                ;;
+
+            full)
+                jq -R 'fromjson? // .' "$log_file"
+                ;;
+
+            *)
+                echo "Unknown output '$output': use 'summary', 'packages' or 'full'" >&2
+                return 1
+                ;;
+        esac
+    }
+
+    if [[ "{{ mode }}" != "local" && "{{ mode }}" != "github" ]]; then
+        echo "Unknown mode '{{ mode }}': use 'local' or 'github'" >&2
+        exit 1
+    fi
+
+    if [[ "{{ mode }}" == "github" && -z "{{ branch }}" ]]; then
+        echo "Error: a branch is required for 'github' mode. Ensure the branch has been pushed." >&2
+        exit 1
+    fi
+
+    if [[ "{{ mode }}" == "github" && -z "${RENOVATE_TOKEN:-}" ]]; then
+        echo "Error: RENOVATE_TOKEN is required for GitHub mode." >&2
+        echo 'Set it with: RENOVATE_TOKEN="$(gh auth token)" just renovate-dry-run github BRANCH' >&2
+        exit 1
+    fi
+
+    log_file=$(mktemp)
+    progress_pid=""
+
+    cleanup() {
+        if [[ -n "$progress_pid" ]]; then
+            kill "$progress_pid" 2>/dev/null || true
+            wait "$progress_pid" 2>/dev/null || true
+        fi
+        rm -f "$log_file"
+    }
+    trap cleanup EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+
+    if [[ "{{ mode }}" == "local" ]]; then
+        echo "Running Renovate against local files; this may take a few minutes" >&2
+    else
+        echo "Running Renovate against GitHub branch {{ branch }}; this may take a few minutes" >&2
+    fi
+
+    (
+        while sleep 5; do
+            printf '.' >&2
+        done
+    ) &
+    progress_pid=$!
+
+    status=0
+
+    # Note that we can't use docker_run_safe here because `--network none` stops
+    # Renovate querying docker, github, pypi etc for updates.
+    # Renovate also needs writable working/cache directories, so we give it a tmpfs mount
+    if [[ "{{ mode }}" == "local" ]]; then
+        export RENOVATE_GITHUB_COM_TOKEN="${RENOVATE_TOKEN:-}"
+        # Other than the writable cache/temp space, we run docker read-only.
+        docker run --rm --read-only --tmpfs /tmp \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --user 65534:65534 \
+            -e HOME=/tmp \
+            -v "$(pwd):/repo:ro" \
+            --workdir /repo \
+            -e LOG_LEVEL=debug \
+            -e LOG_FORMAT=json \
+            -e RENOVATE_GITHUB_COM_TOKEN \
+            renovate/renovate:{{ renovate_version }} \
+            --platform=local > "$log_file" || status=$?
+    else
+        # We can't run as --read-only because it needs to install uv and npm;
+        # however, it doesn't need to mount in any local files because it's pulling
+        # a remote branch.
+
+        # Find the current org/repo from the remote origin
+        repo=$(git remote get-url origin |
+        sed -E 's#(git@|https://)github\.com[:/]##; s#\.git$##')
+
+        if [[ ! "$repo" =~ ^[^/]+/[^/]+$ ]]; then
+            echo "Error: couldn't parse owner/repo from git remote origin." >&2
+            exit 1
+        fi
+
+        docker run --rm --tmpfs /tmp \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            -e LOG_LEVEL=debug \
+            -e LOG_FORMAT=json \
+            -e RENOVATE_TOKEN \
+            renovate/renovate:{{ renovate_version }} \
+            --platform=github \
+            --dry-run=full \
+            --base-branch-patterns="{{ branch }}" \
+            --use-base-branch-config=merge \
+            "$repo" > "$log_file" || status=$?
+    fi
+
+    kill "$progress_pid" 2>/dev/null || true
+    wait "$progress_pid" 2>/dev/null || true
+    progress_pid=""
+    echo >&2
+
+    if [[ "$status" -ne 0 ]]; then
+        echo "Renovate failed. Last 30 log lines:" >&2
+        tail -n 30 "$log_file" >&2
+        exit "$status"
+    fi
+
+    format_renovate_log "$log_file" "{{ output }}"

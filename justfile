@@ -1,4 +1,5 @@
 import 'justfile.base'
+import 'justfile.renovate'
 
 set dotenv-load := true
 set positional-arguments := true
@@ -18,6 +19,3 @@ check:
 # Fix any automatically fixable linting or formatting errors
 fix:
     just --fmt --unstable
-
-check-renovate-config PRESET_FILE:
-    {{ docker_run_safe }} -v $(pwd):/repo:ro --workdir /repo renovate/renovate:{{ renovate_version }} renovate-config-validator {{ PRESET_FILE }}
