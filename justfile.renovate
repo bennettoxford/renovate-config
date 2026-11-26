@@ -47,9 +47,6 @@ renovate-dry-run mode="local" branch="" output="summary":
                             ""
                         end;
 
-                    def display_digest:
-                        format_digest;
-
                     [
                         "PACKAGE",
                         "CURRENT VERSION",
@@ -73,11 +70,11 @@ renovate-dry-run mode="local" branch="" output="summary":
                         | ($dep.updates // [])[]
                         | [
                             $name,
-                            ($currentVersion + ($dep.currentDigest | display_digest)),
+                            ($currentVersion + ($dep.currentDigest | format_digest)),
                             $currentValue,
                             (
                                 (.newVersion // .newValue // "-")
-                                + (.newDigest | display_digest)
+                                + (.newDigest | format_digest)
                             ),
                             (.newValue // "-"),
                             # there can be digest-only updates, i.e. where the version tag is the same but a digest has
